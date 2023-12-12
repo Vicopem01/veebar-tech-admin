@@ -1,0 +1,86 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type UserEntity {
+  _id: ID!
+  firstName: String!
+  lastName: String!
+  email: String!
+  dateOfBirth: String!
+  createdAt: DateTime!
+  phone: Int!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type SignInEntity {
+  token: String!
+}
+
+type AdminSignInEntity {
+  token: String!
+}
+
+type VerifyEmailEntity {
+  token: String!
+}
+
+type MessageDto {
+  _id: String!
+  status: String!
+  messages: [MessageContent!]!
+  updatedAt: String!
+}
+
+type MessageContent {
+  timestamp: Float!
+  content: String!
+  sender: String!
+}
+
+type Query {
+  users: [UserEntity!]!
+  user(id: String!): UserEntity!
+  userMessages(_id: ID!): MessageDto!
+}
+
+type Mutation {
+  signIn(signInInput: SignInInput!): SignInEntity!
+  register(registerInput: RegisterInput!): String!
+  adminSignIn(adminSignInInput: AdminSignInInput!): AdminSignInEntity!
+  adminRegister(adminRegisterInput: AdminRegisterInput!): String!
+  verifyEmail(verifyEmailInput: VerifyEmailInput!): VerifyEmailEntity!
+}
+
+input SignInInput {
+  email: String!
+  password: String!
+}
+
+input RegisterInput {
+  firstName: String!
+  lastName: String!
+  email: String!
+  password: String!
+  dateOfBirth: String!
+}
+
+input AdminSignInInput {
+  email: String!
+  password: String!
+}
+
+input AdminRegisterInput {
+  firstName: String!
+  lastName: String!
+  email: String!
+  password: String!
+}
+
+input VerifyEmailInput {
+  token: String!
+}
