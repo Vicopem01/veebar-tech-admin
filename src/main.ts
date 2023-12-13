@@ -3,9 +3,13 @@ import { AppModule } from './app.module';
 import { HttpStatus, ValidationPipe } from '@nestjs/common';
 import { ValidationError } from 'class-validator';
 import { GraphQLError } from 'graphql';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('PORT', 5050);
+
   app.useGlobalPipes(new ValidationPipe());
 
   app.useGlobalPipes(
@@ -57,7 +61,7 @@ async function bootstrap() {
   );
 
   app.enableCors();
-  await app.listen(4000);
+  await app.listen(port);
   const url = await app.getUrl();
   console.log(`app running on ${url}/graphql`);
 }
