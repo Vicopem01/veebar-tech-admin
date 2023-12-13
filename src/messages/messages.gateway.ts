@@ -16,6 +16,7 @@ import { MessagesService } from './messages.service';
   cors: {
     origin: [
       'https://admin.socket.io',
+      'https://veebar-client.vercel.app',
       'http://localhost:3000',
       'http://localhost:3001',
       'http://localhost:3002',
