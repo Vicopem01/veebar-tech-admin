@@ -12,14 +12,17 @@ import { UserMessageBodyDto } from './messages.dto';
 import { instrument } from '@socket.io/admin-ui';
 import { MessagesService } from './messages.service';
 
+const mapHasUserId = (map: Map<string, string>, userId: string): boolean => {
+  for (const val of map.values()) if (val === userId) return true;
+  return false;
+};
+
 @WebSocketGateway({
   cors: {
     origin: [
       'https://admin.socket.io',
       'https://veebar-client.vercel.app',
       'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:3002',
     ],
     credentials: true,
   },
@@ -41,10 +44,10 @@ export class MessagesGateway
 
   handleConnection(client: Socket) {
     const auth = client.handshake.auth;
-    console.log(auth);
     if (auth.userId) {
       this.clients.set(auth.userId, client);
-      this.reverseClients.set(client.id, auth.userId);
+      !mapHasUserId(this.reverseClients, auth.userId) &&
+        this.reverseClients.set(client.id, auth.userId);
     }
   }
 
@@ -108,25 +111,18 @@ export class MessagesGateway
     @MessageBody() messageBody: UserMessageBodyDto,
     @ConnectedSocket() socket: Socket,
   ) {
-    const { userId } = messageBody;
-    const messageData = {
-      sender: 'user',
-      content: messageBody.message,
-      timestamp: Date.now(),
-    };
-    await this.messagesService.handleUserMessage(messageData, userId);
-
-    // console.log(messageBody);
-
-    socket.emit('new_message', messageData);
-
-    // const adminSocket = this.clients.get('admin');
-    // if (adminSocket) {
-    //   // adminSocket.emit('new_user_message', messageData);
-    // } else {
-    //   console.log('Admin socket not found');
-    // }
-    // socket.emit('new_message', messageData);
-    return;
+    try {
+      const { userId } = messageBody;
+      const messageData = {
+        sender: 'user',
+        content: messageBody.message,
+        timestamp: Date.now(),
+      };
+      await this.messagesService.handleUserMessage(messageData, userId);
+      socket.emit('new_message', messageData);
+      return;
+    } catch (e) {
+      throw e;
+    }
   }
 }

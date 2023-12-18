@@ -38,7 +38,7 @@ export class MessagesService {
     return conversation;
   }
 
-  async handleUserMessage(messageData, userId: string) {
+  async handleUserMessage(messageData: any, userId: string) {
     const conversation = await this.messageModel.findById(userId);
     if (conversation) {
       conversation.messages.push(messageData);
