@@ -48,7 +48,7 @@ export class AuthService {
     return { token };
   }
 
-  async register(registerInput: RegisterInput) {
+  async register(registerInput: RegisterInput, origin: string) {
     const { email, password, ...others } = registerInput;
     const existingUser = await this.userModel.findOne({ email }).exec();
 
@@ -64,7 +64,7 @@ export class AuthService {
 
     const token = await this.jwtService.signAsync({ email, ...others });
 
-    await this.emailService.sendWelcomeEmail(email, token);
+    await this.emailService.sendWelcomeEmail(email, token, origin);
 
     return 'Welcome!';
   }
@@ -92,7 +92,7 @@ export class AuthService {
     return { token };
   }
 
-  async adminRegister(adminRegisterInput: AdminRegisterInput) {
+  async adminRegister(adminRegisterInput: AdminRegisterInput, origin: string) {
     const { email, password, ...others } = adminRegisterInput;
     const existingAdmin = await this.adminModel.findOne({ email }).exec();
 
@@ -108,7 +108,7 @@ export class AuthService {
 
     const token = await this.jwtService.signAsync({ email, ...others });
 
-    await this.emailService.sendWelcomeEmail(email, token);
+    await this.emailService.sendWelcomeEmail(email, token, origin);
 
     return 'New Admin Signed Up!';
   }

@@ -12,11 +12,15 @@ export class EmailService {
    * @param token : signed jwt token
    * @author Victor Ogunjobi
    *  */
-  async sendWelcomeEmail(recipient: string, token: string): Promise<string> {
+  async sendWelcomeEmail(
+    recipient: string,
+    token: string,
+    origin: string,
+  ): Promise<string> {
     const params: EmailSenderDto = {
       recipient: recipient.toLocaleLowerCase(),
       subject: 'Welcome Onboard!',
-      html: welcomeEmail(token),
+      html: welcomeEmail(token, origin),
     };
     try {
       await this.emailSender.sendEmail(params);

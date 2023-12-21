@@ -1,4 +1,7 @@
-export const welcomeEmail = (token: string): string => `<!DOCTYPE html>
+export const welcomeEmail = (
+  token: string,
+  origin: string,
+): string => `<!DOCTYPE html>
 <html
   style="
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -98,7 +101,7 @@ export const welcomeEmail = (token: string): string => `<!DOCTYPE html>
         Verify your account
         <a
           target="_blank"
-          href="http://localhost:3000/auth/verify?token=${token}"
+          href="${origin}/auth/verify?token=${token}"
           rel="noreferrer"
           style="text-decoration: underline; color: blue"
         >

@@ -1,10 +1,6 @@
-import { Resolver, Mutation, Args, Int } from '@nestjs/graphql';
+import { Resolver, Mutation, Args, Int, Context } from '@nestjs/graphql';
 import { AuthService } from './auth.service';
-import {
-  AdminSignInEntity,
-  SignInEntity,
-  VerifyEmailEntity,
-} from './auth.dto';
+import { AdminSignInEntity, SignInEntity, VerifyEmailEntity } from './auth.dto';
 import {
   AdminRegisterInput,
   AdminSignInInput,
@@ -23,8 +19,12 @@ export class AuthResolver {
   }
 
   @Mutation(() => String)
-  register(@Args('registerInput') registerInput: RegisterInput) {
-    return this.authService.register(registerInput);
+  register(
+    @Args('registerInput') registerInput: RegisterInput,
+    @Context() context,
+  ) {
+    const origin = context.req.headers['origin'];
+    return this.authService.register(registerInput, origin);
   }
 
   @Mutation(() => AdminSignInEntity)
@@ -35,8 +35,10 @@ export class AuthResolver {
   @Mutation(() => String, { name: 'adminRegister' })
   adminRegister(
     @Args('adminRegisterInput') adminRegisterInput: AdminRegisterInput,
+    @Context() context,
   ) {
-    return this.authService.adminRegister(adminRegisterInput);
+    const origin = context.req.headers['origin'];
+    return this.authService.adminRegister(adminRegisterInput, origin);
   }
 
   @Mutation(() => VerifyEmailEntity)
