@@ -54,6 +54,7 @@ type Mutation {
   adminSignIn(adminSignInInput: AdminSignInInput!): AdminSignInEntity!
   adminRegister(adminRegisterInput: AdminRegisterInput!): String!
   verifyEmail(verifyEmailInput: VerifyEmailInput!): VerifyEmailEntity!
+  addNewDevice(addNewDeviceInput: AddNewDeviceInput!): String!
 }
 
 input SignInInput {
@@ -83,4 +84,11 @@ input AdminRegisterInput {
 
 input VerifyEmailInput {
   token: String!
+}
+
+input AddNewDeviceInput {
+  secret: String!
+  deviceType: String!
+  serialNumber: String!
+  deviceName: String!
 }

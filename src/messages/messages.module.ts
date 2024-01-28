@@ -1,16 +1,18 @@
 import { Module } from '@nestjs/common';
-import { MessagesController } from './messages.controller';
 import { MessagesService } from './messages.service';
-import { MessagesGateway } from './messages.gateway';
+import SocketGateway from '../socket/socket.gateway';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Message, MessageSchema } from 'src/schemas/message.schema';
+import { Message, MessageSchema } from 'src/messages/message.schema';
 import { MessagesResolver } from './messages.resolver';
+import { Raspi, RaspiSchema } from 'src/schemas/raspi.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Message.name, schema: MessageSchema }]),
+    // MongooseModule.forFeature([{ name: Raspi.name, schema: RaspiSchema }]),
   ],
-  controllers: [MessagesController],
-  providers: [MessagesService, MessagesGateway, MessagesResolver],
+  controllers: [],
+  providers: [MessagesService, MessagesResolver],
+  exports: [MessagesService],
 })
 export default class MessagesModule {}

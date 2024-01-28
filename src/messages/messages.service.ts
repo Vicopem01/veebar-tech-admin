@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { MessageDto, MessageSenderDto } from './messages.dto';
 import { InjectModel } from '@nestjs/mongoose';
-import { Message } from 'src/schemas/message.schema';
+import { Message } from 'src/messages/message.schema';
 import { Model } from 'mongoose';
 
 @Injectable()
@@ -13,15 +13,6 @@ export class MessagesService {
   async getSenders(): Promise<MessageSenderDto[]> {
     // const data = await this.firebase.getMessageSenders();
     let allSenders: MessageSenderDto[] = [];
-    // for (const _id in data) {
-    //   const user = await this.firebase.getUserData(_id);
-    //   allSenders.push({
-    //     _id,
-    //     firstName: user.firstName,
-    //     lastName: user.lastName,
-    //     picture: user.picture,
-    //   });
-    // }
     return allSenders;
   }
 
@@ -52,4 +43,8 @@ export class MessagesService {
       await new this.messageModel(convoData).save();
     }
   }
+
+  raspiConnection() {}
+
+  sessionConnection() {}
 }

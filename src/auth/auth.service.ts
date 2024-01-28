@@ -13,7 +13,8 @@ import { JwtService } from '@nestjs/jwt';
 import { EmailService } from 'src/email/email.service';
 import * as bcrypt from 'bcrypt';
 import { Admin } from 'src/schemas/admin.schema';
-import { UserEntity } from 'src/users/entities/user.entity';
+import { UserEntity } from 'src/users/user.entity';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
@@ -22,6 +23,7 @@ export class AuthService {
     @InjectModel(Admin.name) private readonly adminModel: Model<Admin>,
     private jwtService: JwtService,
     private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
   ) {}
 
   async signIn(signInInput: SignInInput) {
@@ -43,7 +45,9 @@ export class AuthService {
     }
     const { password, ...dataWithoutPassword } = userData['_doc'];
 
-    const token = await this.jwtService.signAsync(dataWithoutPassword);
+    const token = await this.jwtService.signAsync(dataWithoutPassword, {
+      secret: this.configService.get<string>('JWT_SECRET'),
+    });
 
     return { token };
   }
@@ -62,7 +66,12 @@ export class AuthService {
     const createUser = new this.userModel(registerInput);
     await createUser.save();
 
-    const token = await this.jwtService.signAsync({ email, ...others });
+    const token = await this.jwtService.signAsync(
+      { email, ...others },
+      {
+        secret: this.configService.get<string>('JWT_SECRET'),
+      },
+    );
 
     await this.emailService.sendWelcomeEmail(email, token, origin);
 
@@ -87,7 +96,9 @@ export class AuthService {
       throw new GraphQLError('Invalid Credentials');
     }
     const { password, ...dataWithoutPassword } = userData['_doc'];
-    const token = await this.jwtService.signAsync(dataWithoutPassword);
+    const token = await this.jwtService.signAsync(dataWithoutPassword, {
+      secret: this.configService.get<string>('JWT_SECRET'),
+    });
 
     return { token };
   }
@@ -106,7 +117,12 @@ export class AuthService {
     const createAdmin = new this.adminModel(adminRegisterInput);
     await createAdmin.save();
 
-    const token = await this.jwtService.signAsync({ email, ...others });
+    const token = await this.jwtService.signAsync(
+      { email, ...others },
+      {
+        secret: this.configService.get<string>('JWT_SECRET'),
+      },
+    );
 
     await this.emailService.sendWelcomeEmail(email, token, origin);
 
@@ -124,7 +140,9 @@ export class AuthService {
         )
         .exec();
 
-      const token = await this.jwtService.signAsync(dataWithoutPassword);
+      const token = await this.jwtService.signAsync(dataWithoutPassword, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+      });
 
       return { token };
     }

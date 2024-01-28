@@ -1,8 +1,7 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { UsersService } from './users.service';
-import { UserEntity } from './entities/user.entity';
-import { CreateUserInput } from './dto/create-user.input';
-import { UpdateUserInput } from './dto/update-user.input';
+import { UserEntity } from './user.entity';
+import { UpdateUserInput } from './user.input';
 
 @Resolver(() => UserEntity)
 export class UsersResolver {

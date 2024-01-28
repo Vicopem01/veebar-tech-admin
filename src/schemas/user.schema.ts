@@ -23,6 +23,12 @@ export class User {
 
   @Prop({ required: true, default: false })
   isBlocked: boolean;
+
+  @Prop({ type: [Date], default: [] })
+  readonly visits: Date[];
+
+  @Prop({ type: [String], default: [] })
+  readonly raspis: string[];
 }
 
 export type UserDocument = HydratedDocument<User>;

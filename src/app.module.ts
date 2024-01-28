@@ -8,8 +8,10 @@ import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin
 import { AuthModule } from './auth/auth.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { DevicesModule } from './devices/devices.module';
+import { Raspi, RaspiSchema } from './schemas/raspi.schema';
 import MessagesModule from './messages/messages.module';
-// import { JwtModule } from '@nestjs/jwt';
+import SocketModule from './socket/socket.module';
 
 @Module({
   imports: [
@@ -28,10 +30,13 @@ import MessagesModule from './messages/messages.module';
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
     }),
     ConfigModule.forRoot({ isGlobal: true }),
+    MongooseModule.forFeature([{ name: Raspi.name, schema: RaspiSchema }]),
 
     UsersModule,
     AuthModule,
     MessagesModule,
+    SocketModule,
+    DevicesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
