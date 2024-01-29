@@ -66,35 +66,6 @@ export default class SocketGateway
     }
   }
 
-  // @SubscribeMessage('send_message')
-  // handleMessage(@MessageBody() message: string) {
-  //   console.log(message);
-  //   this.server.sockets.emit('recieve_message', message);
-  // }
-
-  // @SubscribeMessage('typing')
-  // handleTyping(@MessageBody() message: string) {
-  //   console.log(message);
-  // }
-
-  // @SubscribeMessage('admin_message')
-  // async handleAdminMessage(
-  //   @MessageBody() messageBody: any,
-  //   @ConnectedSocket() socket: Socket,
-  // ) {
-  //   const { userId, message }: UserMessageBodyDto = messageBody;
-
-  //   // await this.firebaseService.saveUserMessage(userId, senderData, messageData);
-  //   const userSocket = this.clients.get(userId);
-  //   // if (userSocket) userSocket.emit('new_message', messageData);
-  //   socket.emit('new_user_message', '');
-  // }
-
-  // @SubscribeMessage('user_typing')
-  // handleUsertyping(@MessageBody() message: string) {
-  //   // console.log(message);
-  // }
-
   @SubscribeMessage('user_message')
   async handleUserMessage(
     @MessageBody() messageBody: UserMessageBodyDto,
@@ -126,6 +97,27 @@ export default class SocketGateway
     @MessageBody('raspiId') raspiId: string,
   ) {
     return this.devicesService.getRaspi(socket, raspiId);
+  }
+
+  @SubscribeMessage('get raspi status')
+  getRaspiStatus(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody('FCMToken') FCMToken: any,
+  ) {
+    return this.devicesService.getRaspiStatus(socket, FCMToken);
+  }
+
+  @SubscribeMessage('fcm_token')
+  fcmToken(
+    @ConnectedSocket() socket: Socket,
+    @MessageBody('raspiId') raspiId: string,
+  ) {
+    return this.devicesService.fcmToken(socket, raspiId);
+  }
+
+  @SubscribeMessage('visit')
+  visit(@ConnectedSocket() socket: Socket) {
+    return this.devicesService.visit(socket);
   }
 
   @SubscribeMessage('new raspi')
@@ -162,6 +154,25 @@ export default class SocketGateway
     return this.devicesService.raspiConfig(socket, messageBody);
   }
 
-  // @SubscribeMessage('activity')
-  // async handleActivity() {}
+  @SubscribeMessage('activity')
+  async raspiActivity(
+    @MessageBody() body: any,
+    @ConnectedSocket() socket: Socket,
+  ) {
+    switch (body.sensorType) {
+      case 'stove':
+        await this.devicesService.stoveActivity(socket, body);
+        break;
+      case 'fireAlarm':
+        await this.devicesService.fireAlarmActivity(socket, body);
+        break;
+      case 'alarm':
+        await this.devicesService.alarmActivity(socket, body);
+        break;
+      default:
+        break;
+    }
+    await this.devicesService.raspiActivity(socket, body);
+    return;
+  }
 }

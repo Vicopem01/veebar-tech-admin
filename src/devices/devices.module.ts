@@ -9,6 +9,7 @@ import { User, UserSchema } from 'src/schemas/user.schema';
 import { Session, SessionSchema } from 'src/schemas/session.schema';
 import { TimeTrigger, TimeTriggerSchema } from 'src/schemas/timeTrigger.schema';
 import { Status, StatusSchema } from 'src/schemas/status.schema';
+import { Activity, ActivitySchema } from 'src/schemas/activity.schema';
 
 @Module({
   imports: [
@@ -19,6 +20,9 @@ import { Status, StatusSchema } from 'src/schemas/status.schema';
       { name: TimeTrigger.name, schema: TimeTriggerSchema },
     ]),
     MongooseModule.forFeature([{ name: Status.name, schema: StatusSchema }]),
+    MongooseModule.forFeature([
+      { name: Activity.name, schema: ActivitySchema },
+    ]),
   ],
   providers: [DevicesResolver, DevicesService, JwtService],
   exports: [DevicesService],

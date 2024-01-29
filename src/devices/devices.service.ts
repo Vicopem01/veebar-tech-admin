@@ -10,6 +10,7 @@ import moment from 'moment';
 import * as Twilio from 'twilio';
 import { ConfigService } from '@nestjs/config';
 import { Status } from 'src/schemas/status.schema';
+import { Activity } from 'src/schemas/activity.schema';
 
 @Injectable()
 export class DevicesService implements OnModuleInit {
@@ -21,6 +22,7 @@ export class DevicesService implements OnModuleInit {
     @InjectModel(TimeTrigger.name)
     private readonly timeTriggerModel: Model<TimeTrigger>,
     @InjectModel(Status.name) private readonly statusModel: Model<Status>,
+    @InjectModel(Activity.name) private readonly activityModel: Model<Activity>,
   ) {
     this.twilioClient = Twilio(
       this.configService.get('TWILIO_SID'),
@@ -124,6 +126,13 @@ export class DevicesService implements OnModuleInit {
     return;
   }
 
+  async visit(socket: Socket) {
+    await this.userModel.findById(socket['user']._id).then(async (values) => {
+      values.visits.push(new Date());
+      await values.save();
+    });
+  }
+
   async getRaspis(socket: Socket) {
     const values = await this.raspiModel
       .find({ userId: socket['user']._id })
@@ -134,6 +143,24 @@ export class DevicesService implements OnModuleInit {
   async getRaspi(socket: Socket, raspiId: string) {
     const value = await this.raspiModel.findById(raspiId).exec();
     socket.emit('raspi:' + raspiId, value);
+  }
+
+  async getRaspiStatus(socket: Socket, raspiId: string) {
+    const value = await this.statusModel
+      .find({ raspi: raspiId })
+      .sort({ sensorType: 1, sensorID: 1 });
+    socket.emit('raspi status:' + raspiId, value);
+  }
+
+  async fcmToken(socket: Socket, FCMToken: any) {
+    this.userModel.findOne(socket['user'], async (err, user) => {
+      if (user) {
+        let notifications = new Set(user.notifications);
+        notifications.add(FCMToken);
+        user.notifications = Array.from(notifications);
+        await user.save();
+      }
+    });
   }
 
   async newRaspi(socket: Socket, value: any) {
@@ -187,5 +214,273 @@ export class DevicesService implements OnModuleInit {
       await theRaspi.save();
       socket.emit('raspi configuration saved');
     });
+  }
+
+  async raspiActivity(socket: Socket, msg: any) {
+    await this.activityModel.create({
+      raspi: socket['raspi'],
+      payload: msg,
+    });
+
+    await this.statusModel.findOneAndUpdate(
+      {
+        'payload.sensorType': msg.sensorType,
+        'payload.sensorID': msg.sensorID,
+      },
+      {},
+    );
+  }
+
+  async stoveActivity(socket: Socket, msg: any) {
+    await this.raspiModel.findById(socket['raspi']._id, async (err, rpi) => {
+      socket['rapsi'] = rpi;
+
+      if (!rpi.configuration) {
+        rpi.configuration = {};
+      }
+
+      if (!rpi.configuration['stove' + msg.sensorID + 'threshold']) {
+        rpi.configuration['stove' + msg.sensorID + 'threshold'] = 1;
+        rpi.markModified('configuration');
+
+        rpi.save(() => {});
+      }
+
+      if (!rpi.configuration['stove' + msg.sensorID + 'triggerdelay']) {
+        rpi.configuration['stove' + msg.sensorID + 'triggerdelay'] = 15 * 60;
+        rpi.markModified('configuration');
+
+        rpi.save(() => {});
+      }
+
+      if (
+        parseInt(msg.value) >=
+        (parseInt(rpi.configuration['stove' + msg.sensorID + 'threshold']) || 1)
+      ) {
+        await this.statusModel.findOne(
+          {
+            raspi: rpi,
+            sensorID: msg.sensorID,
+            sensorType: msg.sensorType,
+          },
+          async (err, status) => {
+            if (!status) {
+              await this.statusModel.create({
+                raspi: rpi,
+                sensorID: msg.sensorID,
+                sensorType: msg.sensorType,
+                status: 'ON',
+                knownName: msg.sensorType + ' ' + msg.sensorID,
+              });
+
+              await this.userModel.find(
+                { raspis: { $in: [rpi] } },
+                async (err2, user) => {
+                  for (let j = 0; j < user.length; j++) {
+                    if (user[j].phone) {
+                      await this.twilioClient.messages
+                        .create({
+                          body: 'Stove ' + msg.sensorID + ' is on.',
+                          from: '+16479558302',
+                          to: user[j].phone,
+                        })
+                        .then((message) => console.log(message))
+                        .catch((reason) => {
+                          console.log(reason);
+                          console.log('for phone ' + user[j].phone);
+                        });
+                    }
+                  }
+                },
+              );
+
+              await this.timeTriggerModel.create({
+                raspi: rpi,
+                sensorID: msg.sensorID,
+                sensorType: msg.sensorType,
+                time: moment().add(60 * 15, 'seconds'),
+              });
+            } else {
+              if (status.status === 'OFF') {
+                status.status = 'ON';
+                status.save(async () => {
+                  await this.statusModel
+                    .find({ raspi: rpi._id })
+                    .sort({ sensorType: 1, sensorID: 1 })
+                    .then((value) => {
+                      socket.to(rpi._id).emit('raspi status:' + rpi._id, value);
+                    });
+                });
+
+                await this.userModel.find(
+                  { raspis: { $in: [rpi] } },
+                  async (err2, user) => {
+                    for (let j = 0; j < user.length; j++) {
+                      if (user[j].phone) {
+                        await this.twilioClient.messages
+                          .create({
+                            body: 'Stove ' + msg.sensorID + ' is on.',
+                            from: '+16479558302',
+                            to: user[j].phone,
+                          })
+                          .then((message) => console.log(message))
+                          .catch((reason) => {
+                            console.log(reason);
+                            console.log('for phone ' + user[j].phone);
+                          });
+                      }
+                    }
+                  },
+                );
+
+                await this.timeTriggerModel.create({
+                  raspi: rpi,
+                  sensorID: msg.sensorID,
+                  sensorType: msg.sensorType,
+                  time: moment().add(60 * 15, 'seconds'),
+                });
+              }
+            }
+          },
+        );
+      } else {
+        await this.statusModel.findOne(
+          {
+            raspi: rpi,
+            sensorID: msg.sensorID,
+            sensorType: msg.sensorType,
+          },
+          async (err, status) => {
+            if (!status) {
+              await this.statusModel.create({
+                raspi: rpi,
+                sensorID: msg.sensorID,
+                sensorType: msg.sensorType,
+                status: 'OFF',
+                knownName: msg.sensorType + ' ' + msg.sensorID,
+              });
+            } else {
+              if (status.status === 'ON') {
+                status.status = 'OFF';
+                status.save(async () => {
+                  await this.statusModel
+                    .find({ raspi: rpi._id })
+                    .sort({ sensorType: 1, sensorID: 1 })
+                    .then((value) => {
+                      socket.to(rpi._id).emit('raspi status:' + rpi._id, value);
+                    });
+                });
+
+                await this.timeTriggerModel.deleteMany(
+                  {
+                    raspi: rpi,
+                    sensorID: msg.sensorID,
+                    sensorType: msg.sensorType,
+                  },
+                  () => {},
+                );
+              }
+            }
+          },
+        );
+      }
+    });
+  }
+
+  async fireAlarmActivity(socket: Socket, msg: any) {
+    if (msg.value === 'ON')
+      // Find users owning that raspi:
+      await this.userModel.find(
+        { raspis: { $in: [socket['raspi']._id] } },
+        async (err2, user) => {
+          // If any users were found:
+          if (user)
+            for (let j = 0; j < user.length; j++) {
+              // For each user owning that raspi:
+
+              if (user[j].phone) {
+                await this.twilioClient.messages
+                  .create({
+                    body: '🔥 Fire Alert on fire alarm ' + msg.sensorID + '.',
+                    from: '+16479558302',
+                    to: user[j].phone,
+                    // to: "+16478889029"
+                  })
+                  .then((message) => console.log(message))
+                  .catch((reason) => {
+                    console.log(reason);
+                  });
+              }
+            }
+        },
+      );
+
+    await this.statusModel.findOne(
+      {
+        raspi: socket['raspi'],
+        sensorID: msg.sensorID,
+        sensorType: msg.sensorType,
+      },
+      async (err, status) => {
+        if (!status) {
+          await this.statusModel.create({
+            raspi: socket['raspi'],
+            sensorID: msg.sensorID,
+            sensorType: msg.sensorType,
+            status: msg.value,
+            knownName: msg.sensorType + ' ' + msg.sensorID,
+          });
+        } else {
+          if (status.status !== msg.value) {
+            status.status = msg.value;
+            status.save(async () => {
+              await this.statusModel
+                .find({ raspi: socket['raspi']._id })
+                .sort({ sensorType: 1, sensorID: 1 })
+                .then((value) => {
+                  socket
+                    .to(socket['raspi']._id)
+                    .emit('raspi status:' + socket['raspi']._id, value);
+                });
+            });
+          }
+        }
+      },
+    );
+  }
+
+  async alarmActivity(socket: Socket, msg: any) {
+    await this.statusModel.findOne(
+      {
+        raspi: socket['raspi'],
+        sensorID: msg.sensorID,
+        sensorType: msg.sensorType,
+      },
+      async (err, status) => {
+        if (!status) {
+          await this.statusModel.create({
+            raspi: socket['raspi'],
+            sensorID: msg.sensorID,
+            sensorType: msg.sensorType,
+            status: msg.value,
+            knownName: msg.sensorType + ' ' + msg.sensorID,
+          });
+        } else {
+          if (status.status !== msg.value) {
+            status.status = msg.value;
+            status.save(async () => {
+              await this.statusModel
+                .find({ raspi: socket['raspi']._id })
+                .sort({ sensorType: 1, sensorID: 1 })
+                .then((value) => {
+                  socket
+                    .to(socket['raspi']._id)
+                    .emit('raspi status:' + socket['raspi']._id, value);
+                });
+            });
+          }
+        }
+      },
+    );
   }
 }
