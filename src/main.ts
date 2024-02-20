@@ -63,6 +63,6 @@ async function bootstrap() {
   app.enableCors();
   await app.listen(port);
   const url = await app.getUrl();
-  console.log(`app running on ${url}/graphql`);
+  console.log(`app is running on ${url}/graphql`);
 }
 bootstrap();
