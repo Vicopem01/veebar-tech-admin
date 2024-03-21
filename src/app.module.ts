@@ -28,6 +28,7 @@ import SocketModule from './socket/socket.module';
       autoSchemaFile: 'schema.gql',
       playground: false,
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
+      introspection: true, // remove from prod
     }),
     ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forFeature([{ name: Raspi.name, schema: RaspiSchema }]),
