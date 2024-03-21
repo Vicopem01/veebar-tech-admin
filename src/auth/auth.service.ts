@@ -130,6 +130,7 @@ export class AuthService {
   }
 
   async verifyEmail(token: string) {
+    // verify email
     const isValidToken: UserEntity = await this.jwtService.verifyAsync(token);
     if (isValidToken) {
       const { password, ...dataWithoutPassword } = await this.userModel
